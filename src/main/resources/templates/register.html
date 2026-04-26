@@ -4,94 +4,156 @@
     <meta charset="UTF-8">
     <title>Register</title>
 
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+
     <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+
         body {
-            font-family: Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea, #764ba2);
             height: 100vh;
+            background: linear-gradient(-45deg, #667eea, #764ba2, #6a11cb, #2575fc);
+            background-size: 400% 400%;
+            animation: gradientMove 10s ease infinite;
             display: flex;
-            align-items: center;
             justify-content: center;
-            margin: 0;
+            align-items: center;
         }
 
-        .register-card {
-            background: #fff;
-            width: 320px;
-            padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 15px 30px rgba(0,0,0,0.25);
+        @keyframes gradientMove {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
 
-        .register-card h2 {
-            text-align: center;
-            margin-bottom: 20px;
+        .card {
+            width: 360px;
+            padding: 35px;
+            border-radius: 20px;
+            backdrop-filter: blur(15px);
+            background: rgba(255,255,255,0.1);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            color: white;
         }
+
+        h2 { text-align: center; margin-bottom: 25px; }
 
         input {
             width: 100%;
-            padding: 10px;
-            margin-bottom: 12px;
-            border-radius: 6px;
-            border: 1px solid #ccc;
-            font-size: 14px;
+            padding: 12px;
+            margin-bottom: 15px;
+            border-radius: 10px;
+            border: none;
+            outline: none;
+            background: rgba(255,255,255,0.2);
+            color: white;
         }
+
+        input::placeholder { color: rgba(255,255,255,0.7); }
 
         button {
             width: 100%;
-            padding: 10px;
+            padding: 12px;
+            border-radius: 10px;
             border: none;
-            border-radius: 6px;
-            background: #667eea;
-            color: white;
-            font-size: 15px;
             cursor: pointer;
-            margin-top: 8px;
+            font-weight: 600;
+            margin-top: 5px;
         }
 
-        button:hover {
-            background: #5a6fdc;
-        }
-
-        .back-btn {
+        .primary { background: white; color: #667eea; }
+        .secondary {
+            margin-top: 10px;
             background: transparent;
-            color: #667eea;
-            border: 1px solid #667eea;
-            margin-top: 10px;
+            border: 1px solid white;
+            color: white;
         }
 
-        .msg {
-            text-align: center;
-            margin-top: 10px;
-            font-size: 13px;
-            color: red;
-        }
-
-        a {
-            text-decoration: none;
-        }
+        .msg { text-align: center; margin-top: 10px; font-size: 13px; }
     </style>
 </head>
 
 <body>
 
-<div class="register-card">
+<div class="card">
     <h2>Create Account</h2>
 
-    <form th:action="@{/saveuser}" method="post">
-        <input type="text" name="username" placeholder="Username" required />
-        <input type="password" name="password" placeholder="Password" required />
-        <button type="submit">Register</button>
+    <!-- FULL DETAILS -->
+    <input type="text" id="fullName" placeholder="Full Name" required />
+    <input type="text" id="username" placeholder="Username" required />
+    <input type="text" id="phone" placeholder="Phone Number" required />
+
+    <button class="secondary" onclick="sendOtp()">Send OTP</button>
+
+    <input type="text" id="otp" placeholder="Enter OTP" maxlength="6" />
+
+    <button class="primary" onclick="register()">Verify & Register</button>
+
+    <form th:action="@{/login}" method="get">
+        <button type="submit" class="secondary">Back to Login</button>
     </form>
 
-    <a th:href="@{/login}">
-        <button type="button" class="back-btn">Back to Login</button>
-    </a>
-
-    <div class="msg" th:if="${param.error}">
-        Username already exists
-    </div>
+    <div class="msg" id="message"></div>
 </div>
+
+<script>
+
+    /* =========================
+       SEND OTP (JSON)
+       ========================= */
+    async function sendOtp() {
+
+        const fullName = document.getElementById("fullName").value;
+        const username = document.getElementById("username").value;
+        const phone = document.getElementById("phone").value;
+
+        const response = await fetch("/api/v1/auth/send-otp", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                phone: phone
+            })
+        });
+
+        if (response.ok) {
+            document.getElementById("message").innerText = "OTP Sent Successfully!";
+        } else {
+            document.getElementById("message").innerText = "Failed to send OTP";
+        }
+    }
+
+    /* =========================
+       VERIFY OTP + REGISTER (JSON)
+       ========================= */
+    async function register() {
+
+        const fullName = document.getElementById("fullName").value;
+        const username = document.getElementById("username").value;
+        const phone = document.getElementById("phone").value;
+        const otp = document.getElementById("otp").value;
+
+        const response = await fetch("/api/v1/auth/verify-otp", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                fullName: fullName,
+                username: username,
+                phone: phone,
+                otp: otp
+            })
+        });
+
+        if (response.ok) {
+            window.location.href = "/login?registered=true";
+        } else {
+            document.getElementById("message").innerText = "Invalid OTP or registration failed";
+        }
+    }
+
+</script>
 
 </body>
 </html>

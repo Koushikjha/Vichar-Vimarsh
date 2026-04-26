@@ -1,346 +1,420 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <title>Chat</title>
-
     <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+
         body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background: #f0f2f5;
             height: 100vh;
             display: flex;
+            background: linear-gradient(-45deg, #667eea, #764ba2, #6a11cb, #2575fc);
+            background-size: 400% 400%;
+            animation: gradientMove 12s ease infinite;
+        }
+        @keyframes gradientMove {
+            0%   { background-position: 0% 50%; }
+            50%  { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
 
-        /* LEFT SIDEBAR */
+        /* SIDEBAR */
         .sidebar {
             width: 280px;
-            background: #ffffff;
-            border-right: 1px solid #ddd;
-            padding: 10px;
-            box-sizing: border-box;
-        }
-
-        .chat-box {
+            backdrop-filter: blur(20px);
+            background: rgba(255,255,255,0.1);
             padding: 15px;
-            margin-bottom: 10px;
-            background: #f5f6f7;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
+            overflow-y: auto;
+            border-right: 1px solid rgba(255,255,255,0.2);
         }
-
-        .chat-box.active {
-            background: #1877f2;
+        .sidebar-header {
             color: white;
+            font-size: 13px;
+            font-weight: 500;
+            opacity: 0.7;
+            margin-bottom: 10px;
+            padding: 0 4px;
         }
-        .chat-box:hover {
-            background: #e4e6eb;
-            color : black;
+        .chat-box {
+            padding: 12px 15px;
+            margin-bottom: 10px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            color: white;
+            border: 1px solid rgba(255,255,255,0.25);
+            background: rgba(255,255,255,0.08);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
+        .chat-box:hover { background: rgba(255,255,255,0.2); transform: translateX(5px); }
+        .chat-box.active {
+            background: white;
+            color: #667eea;
+            font-weight: 600;
+            border: 1px solid white;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+        }
+        .online-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #4dff88;
+            flex-shrink: 0;
+        }
+        .offline-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.3);
+            flex-shrink: 0;
+        }
+        .chat-box.active .online-dot  { background: #38c96a; }
+        .chat-box.active .offline-dot { background: #bbb; }
 
-        /* RIGHT CHAT AREA */
+        /* LOGOUT button */
+        .logout-btn {
+            margin-top: 10px;
+            width: 100%;
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.4);
+            background: transparent;
+            color: white;
+            cursor: pointer;
+            font-size: 13px;
+            transition: 0.3s;
+        }
+        .logout-btn:hover { background: rgba(255,255,255,0.15); }
+
+        /* CHAT AREA */
         .chat-container {
             flex: 1;
             display: flex;
             flex-direction: column;
-            background: white;
+            backdrop-filter: blur(20px);
+            background: rgba(255,255,255,0.15);
         }
-
         .chat-header {
-            padding: 15px;
-            border-bottom: 1px solid #ddd;
-            font-weight: bold;
+            padding: 18px;
+            font-weight: 600;
+            color: white;
+            font-size: 18px;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
         }
-
         #notifications {
-             flex: 1;
-            padding: 15px;
+            flex: 1;
+            padding: 20px;
             overflow-y: auto;
-            background: #f0f2f5;
-
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 10px;
         }
-
         .msg {
-            padding: 8px 12px;
-            border-radius: 12px;
-            max-width: 70%;
-
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-            white-space: pre-wrap;
+            padding: 10px 15px;
+            border-radius: 18px;
+            max-width: 65%;
+            font-size: 14px;
+            line-height: 1.4;
+            animation: fadeIn 0.2s ease;
+            word-break: break-word;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to   { opacity: 1; transform: translateY(0); }
         }
         .msg.sent {
             align-self: flex-end;
-            background: #1877f2;
-            color: white;
+            background: white;
+            color: #667eea;
+            border-bottom-right-radius: 5px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
         }
-
         .msg.received {
             align-self: flex-start;
-            background: #e4e6eb;
-            color: black;
+            background: rgba(255,255,255,0.25);
+            color: white;
+            border-bottom-left-radius: 5px;
         }
 
-
+        /* INPUT */
         .input-container {
-             display: flex;
-            padding: 10px;
-            border-top: 1px solid #ddd;
-            background: white;
-
-            flex-shrink: 0;
+            display: flex;
+            padding: 15px;
+            background: rgba(255,255,255,0.1);
+            border-top: 1px solid rgba(255,255,255,0.2);
         }
-
         #message {
             flex: 1;
-            padding: 10px;
-            font-size: 14px;
-            border-radius: 6px;
-            border: 1px solid #ccc;
-        }
-
-        button {
-            margin-left: 8px;
-            padding: 10px 14px;
-            font-size: 14px;
+            padding: 12px;
+            border-radius: 25px;
             border: none;
-            border-radius: 6px;
-            background: #1877f2;
-            color: white;
+            outline: none;
+            background: rgba(255,255,255,0.3);
+            color: #4b5fd1;
+            font-size: 14px;
+            transition: 0.3s ease;
+        }
+        #message::placeholder { color: #4b5fd1; opacity: 0.8; }
+        #message:focus { background: rgba(255,255,255,0.5); }
+
+        button.send-btn {
+            margin-left: 10px;
+            padding: 10px 18px;
+            border-radius: 25px;
+            border: none;
+            background: white;
+            color: #667eea;
+            font-weight: 600;
             cursor: pointer;
+            transition: 0.3s ease;
         }
+        button.send-btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
 
-        button:hover {
-            background: #165ecc;
-        }
+        #notifications::-webkit-scrollbar { width: 6px; }
+        #notifications::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.4); border-radius: 10px; }
     </style>
-
     <script src="https://cdn.jsdelivr.net/npm/sockjs-client/dist/sockjs.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/stompjs/lib/stomp.min.js"></script>
 </head>
-
 <body>
 
+<!--
+    username = the display username (e.g. "john")
+    phone    = the phone / principal name used in security context
+-->
 <script th:inline="javascript">
-    var username = /*[[${username}]]*/ 'defaultUser';
+    /*<![CDATA[*/
+    var username = /*[[${username}]]*/ 'User';
+    var phone    = /*[[${phone}]]*/ '';
+    /*]]>*/
 </script>
 
-<!-- LEFT CHAT LIST -->
+<!-- LEFT SIDEBAR -->
 <div class="sidebar">
+    <div class="sidebar-header">Chats</div>
 
     <!-- PUBLIC CHAT TAB -->
-    <div class="chat-box active"
-         onclick="openPublicChat(this)">
-        🌍 Public Chat
+    <div class="chat-box active" onclick="openPublicChat(this)">
+        <span>🌍 Public Chat</span>
     </div>
 
+    <!-- PRIVATE CHAT TABS -->
     <div th:each="user : ${otherUsers}"
          class="chat-box"
-         th:text="'👤 ' + ${user.username}"
-         th:attr="data-username=${user.username}"
-         th:classappend="${@onlineUserTracker.isOnline(user.username)} ? 'online' : 'offline'"
-         onclick="openPrivateChat(this.dataset.username,this)">
-
-
+         th:attr="data-username=${user.username}, data-phone=${user.phone}"
+         onclick="openPrivateChat(this.dataset.username, this.dataset.phone, this)">
+        <span th:text="'👤 ' + ${user.username}"></span>
+        <span th:classappend="${@onlineUserTracker.isOnline(user.username)} ? 'online-dot' : 'offline-dot'"></span>
     </div>
 
+    <button type="button" class="logout-btn" onclick="handleLogout()">Logout</button>
 </div>
 
-<!-- RIGHT CHAT -->
+<!-- RIGHT CHAT AREA -->
 <div class="chat-container">
-    <div class="chat-header">Public Chat</div>
-
+    <div class="chat-header" id="chat-header">Public Chat</div>
     <div id="notifications"></div>
-
     <div class="input-container">
         <input type="text" id="message" placeholder="Type something...">
-        <button onclick="sendMessage()">Send</button>
+        <button class="send-btn" onclick="sendMessage()">Send</button>
     </div>
 </div>
 
 <script>
-    let currentPage = 0;
-    let chatMode = "PUBLIC";     // PUBLIC | PRIVATE
-    let activeReceiver = null;  // username for private chat
+    // ── State ──────────────────────────────────────────────────────────────────
+    let currentPage   = 0;
+    let chatMode      = "PUBLIC";   // "PUBLIC" | "PRIVATE"
+    let activeReceiver     = null;  // display username for private chat
+    let activeReceiverPhone = null; // phone used for message queries
+    let stompClient   = null;
+    const chatBox     = document.getElementById("notifications");
 
-    let stompClient = null;
-
+    // ── WebSocket connection ───────────────────────────────────────────────────
     function connect() {
-        const socket = new SockJS('http://localhost:8080/ws');
+        const socket = new SockJS('/ws');   // relative URL — works regardless of port
         stompClient = Stomp.over(socket);
+        stompClient.debug = null;           // suppress verbose STOMP logs
 
         stompClient.connect({}, function () {
-            console.log("Connected");
+            console.log("WebSocket connected");
 
-            fetch("/messages/markDelivered?username=" + username, { method: "GET" })
-            .catch(err => console.error("Error marking messages as SEEN:", err));
+            // Mark any pending messages delivered for this user
+            fetch("/messages/markDelivered?username=" + encodeURIComponent(username))
+                .catch(err => console.error("markDelivered error:", err));
 
+            // Subscribe public channel
             stompClient.subscribe('/topic/notifications', function (msg) {
                 if (chatMode !== "PUBLIC") return;
-
                 const body = JSON.parse(msg.body);
-                publicShowMessage(body.sender,body.content);
+                showMessage(body.sender, body.content, "PUBLIC");
             });
 
-            stompClient.subscribe("/topic/private-" + username, function(msg)  {
+            // Subscribe private channel (keyed on display username)
+            stompClient.subscribe("/topic/private-" + username, function (msg) {
                 const body = JSON.parse(msg.body);
+                fetch("/messages/markDelivered?username=" + encodeURIComponent(username))
+                    .catch(err => console.error("markDelivered error:", err));
 
-                if (chatMode === "PRIVATE" && (body.sender === activeReceiver || body.receiver===activeReceiver)) {
-                    privateShowMessage(body.sender,body.content);
+                if (chatMode === "PRIVATE" &&
+                    (body.sender === activeReceiver || body.receiver === activeReceiver)) {
+                    showMessage(body.sender, body.content, "PRIVATE");
                 }
             });
-
+        }, function (error) {
+            console.error("STOMP connection error:", error);
         });
     }
 
+    function handleLogout() {
+        fetch('/api/v1/auth/logout', {
+            method: 'POST',
+            credentials: 'include'
+        })
+            .then(res => {
+                console.log('Logout response status:', res.status);
+            })
+            .catch(err => {
+                console.error('Logout fetch error:', err);
+            })
+            .finally(() => {
+                window.location.href = '/login';
+            });
+    }
+
+    // ── Chat tab switching ─────────────────────────────────────────────────────
+    function openPublicChat(el) {
+        chatMode = "PUBLIC";
+        activeReceiver = null;
+        activeReceiverPhone = null;
+        clearChat();
+        document.getElementById("chat-header").innerText = "Public Chat";
+        setActiveTab(el);
+    }
+
+    function openPrivateChat(receiverUsername, receiverPhone, el) {
+        chatMode = "PRIVATE";
+        activeReceiver = receiverUsername;
+        activeReceiverPhone = receiverPhone;
+        currentPage = 0;
+
+        clearChat();
+        document.getElementById("chat-header").innerText = receiverUsername;
+        setActiveTab(el);
+
+        // Mark messages as seen
+        fetch("/messages/markSeen?sender=" + encodeURIComponent(receiverUsername)
+            + "&receiver=" + encodeURIComponent(username))
+            .catch(err => console.error("markSeen error:", err));
+
+        // Load message history (oldest-first from endpoint)
+        loadPage(0);
+    }
+
+    function loadPage(page) {
+        if (activeReceiver === null) return;
+        fetch("/messages/load?sender=" + encodeURIComponent(username)
+            + "&receiver=" + encodeURIComponent(activeReceiver)
+            + "&page=" + page + "&size=20")
+            .then(res => res.json())
+            .then(messages => {
+                if (!Array.isArray(messages) || messages.length === 0) return;
+                // messages are oldest-first; prepend each so they appear at top
+                messages.forEach(msg => prependMessage(msg));
+                if (page === 0) scrollChatToBottom();
+                currentPage = page + 1;
+            })
+            .catch(err => console.error("load messages error:", err));
+    }
+
+    // ── Message rendering ──────────────────────────────────────────────────────
+    /**
+     * Appends a new incoming/sent message to the bottom of the chat.
+     */
+    function showMessage(sender, content, mode) {
+        const div = document.createElement("div");
+        div.classList.add("msg");
+        if (sender === username) {
+            div.classList.add("sent");
+            div.textContent = content;
+        } else {
+            div.classList.add("received");
+            div.textContent = (mode === "PUBLIC") ? sender + ": " + content : content;
+        }
+        chatBox.appendChild(div);
+        scrollChatToBottom();
+    }
+
+    /**
+     * Prepends an older (history) message to the top of the chat.
+     */
     function prependMessage(msg) {
         const div = document.createElement("div");
         div.classList.add("msg");
         div.classList.add(msg.sender === username ? "sent" : "received");
-        div.textContent = msg.sender === username ? msg.content : msg.content;
-        chatBox.prepend(div);
+        div.textContent = msg.sender === username
+            ? msg.content
+            : (chatMode === "PUBLIC" ? msg.sender + ": " + msg.content : msg.content);
+        chatBox.insertBefore(div, chatBox.firstChild);
     }
 
-    function openPublicChat(el) {
-        chatMode = "PUBLIC";
-        activeReceiver = null;
-
-        clearChat();
-        document.querySelector(".chat-header").innerText = "Public Chat";
-
-        setActiveTabByElement(el);
-    }
-
-    function openPrivateChat(sender,el) {
-        chatMode = "PRIVATE";
-        activeReceiver = sender;
-
-        clearChat();
-        document.querySelector(".chat-header").innerText = sender;
-
-        setActiveTabByElement(el);
-
-        fetch("/messages/markSeen?sender=" + sender + "&receiver=" + username, { method: "GET" })
-        .catch(err => console.error("Error marking messages as SEEN:", err));
-
-        currentPage = 0;
-
-        fetch(`/messages/load?sender=${username}&receiver=${activeReceiver}&page=${currentPage}&size=20`)
-        .then(res => res.json())
-        .then(messages => {
-             if (!Array.isArray(messages) || messages.length === 0) return;
-            messages.reverse().forEach(msg => prependMessage(msg));
-            chatBox.scrollTop = chatBox.scrollHeight;
-            currentPage++;
-        });
+    function scrollChatToBottom() {
+        chatBox.scrollTop = chatBox.scrollHeight;
     }
 
     function clearChat() {
-        document.getElementById("notifications").innerHTML = "";
+        chatBox.innerHTML = "";
     }
 
-    function setActiveTabByElement(el) {
-        document.querySelectorAll(".chat-box").forEach(t => t.classList.remove("active"));
+    function setActiveTab(el) {
+        document.querySelectorAll(".chat-box")
+            .forEach(t => t.classList.remove("active"));
         el.classList.add("active");
     }
 
-
-
+    // ── Sending messages ───────────────────────────────────────────────────────
     function sendMessage() {
         const input = document.getElementById("message");
-        const text = input.value.trim();
-
+        const text  = input.value.trim();
         if (!text || !stompClient || !stompClient.connected) return;
 
         if (chatMode === "PUBLIC") {
             stompClient.send("/app/sendMessage", {}, JSON.stringify({
-                content: text,
-                receiver: activeReceiver
+                content:  text,
+                receiver: "public"
             }));
-        }
-
-        if (chatMode === "PRIVATE") {
+        } else {
             stompClient.send("/app/privateMessage", {}, JSON.stringify({
-                content: text,
+                content:  text,
                 receiver: activeReceiver
             }));
         }
-
 
         input.value = "";
         input.focus();
     }
 
-    function publicShowMessage(sender,content) {
-         const box = document.getElementById("notifications");
-
-        const div = document.createElement("div");
-        div.classList.add("msg");
-
-        if (sender === username) {
-            div.classList.add("sent");
-            div.textContent = content ;
-        } else {
-            div.classList.add("received");
-            div.textContent = sender + ": " + content;
-        }
-
-        box.appendChild(div);
-        box.scrollTop = box.scrollHeight;
-        scrollChatToBottom();
-    }
-
-
-    function privateShowMessage(sender,content) {
-         const box = document.getElementById("notifications");
-
-        const div = document.createElement("div");
-        div.classList.add("msg");
-
-        if (sender === username) {
-            div.classList.add("sent");
-            div.textContent = content ;
-        } else {
-            div.classList.add("received");
-            div.textContent = content;
-        }
-
-        box.appendChild(div);
-        box.scrollTop = box.scrollHeight;
-        scrollChatToBottom();
-    }
-
-    connect();
-
-    const input = document.getElementById("message");
-    input.addEventListener("keydown", function(event) {
-        if (event.key === "Enter" && !event.shiftKey) {
-            event.preventDefault();
+    // ── Keyboard shortcut ──────────────────────────────────────────────────────
+    document.getElementById("message").addEventListener("keydown", function (e) {
+        if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
             sendMessage();
         }
     });
 
-    const chatBox = document.getElementById("notifications");
-
-    chatBox.addEventListener("scroll", () => {
-        // Only load older messages when scrolling to top
-        if(chatBox.scrollTop === 0 && chatMode === "PRIVATE") {
-            fetch(`/messages/load?sender=${username}&receiver=${activeReceiver}&page=${currentPage}&size=20`)
-            .then(res => res.json())
-            .then(messages => {
-                 if (!Array.isArray(messages) || messages.length === 0) return;
-                messages.reverse().forEach(msg => prependMessage(msg));
-                currentPage++;
-            })
-            .catch(err => console.error("Error fetching messages:", err));
+    // ── Infinite scroll — load older messages on scroll to top ────────────────
+    chatBox.addEventListener("scroll", function () {
+        if (chatBox.scrollTop === 0 && chatMode === "PRIVATE") {
+            loadPage(currentPage);
         }
     });
 
+    // ── Start ──────────────────────────────────────────────────────────────────
+    connect();
 </script>
 
 </body>

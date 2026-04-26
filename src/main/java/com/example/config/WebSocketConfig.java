@@ -1,6 +1,6 @@
 package com.example.config;
 
-import com.example.service.HttpHandshakeInterceptor;
+import com.example.auth.service.HttpHandshakeInterceptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.Message;
@@ -18,17 +18,22 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 @Configuration
 @EnableWebSocketMessageBroker
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
+
     @Autowired
     private HttpHandshakeInterceptor httpHandshakeInterceptor;
+
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        registry.addEndpoint("/ws").addInterceptors(httpHandshakeInterceptor).setAllowedOrigins("http://localhost:63342")
+        registry.addEndpoint("/ws")
+                .addInterceptors(httpHandshakeInterceptor)
+                // Allow both the app itself and common dev origins
+                .setAllowedOriginPatterns("*")
                 .withSockJS();
     }
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
-        config.enableSimpleBroker("/topic" ,"/queue", "/user");
+        config.enableSimpleBroker("/topic", "/queue", "/user");
         config.setApplicationDestinationPrefixes("/app");
         config.setUserDestinationPrefix("/user");
     }
@@ -38,9 +43,10 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         registration.interceptors(new ChannelInterceptor() {
             @Override
             public Message<?> preSend(Message<?> message, MessageChannel channel) {
-                StompHeaderAccessor accessor=StompHeaderAccessor.wrap(message);
-                if(accessor.getUser()!=null){
-                    SecurityContextHolder.getContext().setAuthentication((Authentication) accessor.getUser());
+                StompHeaderAccessor accessor = StompHeaderAccessor.wrap(message);
+                if (accessor.getUser() != null) {
+                    SecurityContextHolder.getContext()
+                            .setAuthentication((Authentication) accessor.getUser());
                 }
                 return message;
             }
